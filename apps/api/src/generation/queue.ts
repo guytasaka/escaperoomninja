@@ -6,6 +6,7 @@ import IORedis from 'ioredis'
 import { workersByAssetType } from '../workers'
 import { GenerationEventBus } from './event-bus'
 import { passesQualityGate } from './quality-gates'
+import type { GenerationJobStore } from './store'
 import type { GenerationAssetType, GenerationEvent, GenerationJobRecord } from './types'
 
 export interface QueueAssetRequest {
@@ -15,11 +16,10 @@ export interface QueueAssetRequest {
 }
 
 export class GenerationQueueRuntime {
-  private readonly jobsByProject = new Map<string, GenerationJobRecord[]>()
   private readonly eventBus = new GenerationEventBus()
   private readonly queue: Queue | null
 
-  constructor() {
+  constructor(private readonly store: GenerationJobStore) {
     const redisUrl = process.env.REDIS_URL
     if (redisUrl) {
       const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null })
@@ -30,23 +30,17 @@ export class GenerationQueueRuntime {
     this.queue = null
   }
 
-  enqueue(projectId: string, requests: QueueAssetRequest[]): string {
+  async enqueue(projectId: string, requests: QueueAssetRequest[]): Promise<string> {
     const runId = randomUUID()
-    const existing = this.jobsByProject.get(projectId) ?? []
-    const queuedJobs: GenerationJobRecord[] = requests.map((request) => ({
-      id: randomUUID(),
-      projectId,
-      assetType: request.assetType,
-      assetName: request.assetName,
-      status: 'queued',
-      attempt: 0,
-      maxAttempts: request.maxAttempts ?? 2,
-      outputUrl: null,
-      error: null,
-      updatedAt: new Date(),
-    }))
+    const queuedJobs = await this.store.createMany(
+      requests.map((request) => ({
+        projectId,
+        assetType: request.assetType,
+        assetName: request.assetName,
+        maxAttempts: request.maxAttempts ?? 2,
+      })),
+    )
 
-    this.jobsByProject.set(projectId, [...existing, ...queuedJobs])
     for (const job of queuedJobs) {
       this.publish(projectId, job)
       void this.processJob(job)
@@ -55,8 +49,8 @@ export class GenerationQueueRuntime {
     return runId
   }
 
-  list(projectId: string): GenerationJobRecord[] {
-    return this.jobsByProject.get(projectId) ?? []
+  async list(projectId: string): Promise<GenerationJobRecord[]> {
+    return await this.store.listByProject(projectId)
   }
 
   subscribe(projectId: string, listener: (event: GenerationEvent) => void): () => void {
@@ -66,7 +60,7 @@ export class GenerationQueueRuntime {
   private async processJob(job: GenerationJobRecord): Promise<void> {
     const worker = workersByAssetType[job.assetType]
     for (let attempt = 1; attempt <= job.maxAttempts; attempt += 1) {
-      this.update(job.projectId, job.id, {
+      await this.update(job.projectId, job.id, {
         status: 'processing',
         attempt,
         error: null,
@@ -82,7 +76,7 @@ export class GenerationQueueRuntime {
         const quality = passesQualityGate(job.assetType, result)
         if (!quality.ok) {
           if (attempt === job.maxAttempts) {
-            this.update(job.projectId, job.id, {
+            await this.update(job.projectId, job.id, {
               status: 'failed',
               error: quality.reason,
               outputUrl: null,
@@ -93,7 +87,7 @@ export class GenerationQueueRuntime {
           continue
         }
 
-        this.update(job.projectId, job.id, {
+        await this.update(job.projectId, job.id, {
           status: 'complete',
           outputUrl: result.outputUrl,
           error: null,
@@ -102,7 +96,7 @@ export class GenerationQueueRuntime {
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown generation error'
         if (attempt === job.maxAttempts) {
-          this.update(job.projectId, job.id, {
+          await this.update(job.projectId, job.id, {
             status: 'failed',
             error: message,
             outputUrl: null,
@@ -113,24 +107,15 @@ export class GenerationQueueRuntime {
     }
   }
 
-  private update(
+  private async update(
     projectId: string,
     jobId: string,
     patch: Partial<Pick<GenerationJobRecord, 'status' | 'attempt' | 'outputUrl' | 'error'>>,
-  ): void {
-    const projectJobs = this.jobsByProject.get(projectId)
-    if (!projectJobs) {
-      return
+  ): Promise<void> {
+    const updated = await this.store.update(projectId, jobId, patch)
+    if (updated) {
+      this.publish(projectId, updated)
     }
-
-    const target = projectJobs.find((job) => job.id === jobId)
-    if (!target) {
-      return
-    }
-
-    Object.assign(target, patch)
-    target.updatedAt = new Date()
-    this.publish(projectId, target)
   }
 
   private publish(projectId: string, job: GenerationJobRecord): void {

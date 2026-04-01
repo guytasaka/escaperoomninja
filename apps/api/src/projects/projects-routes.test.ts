@@ -11,6 +11,7 @@ const registerAndGetToken = async (app: ReturnType<typeof createApp>, email: str
       password: 'supersecret123',
     }),
   })
+  expect(response.status).toBe(201)
 
   const json = (await response.json()) as { data: { token: string } }
   return json.data.token
@@ -19,7 +20,7 @@ const registerAndGetToken = async (app: ReturnType<typeof createApp>, email: str
 describe('project routes', () => {
   it('creates, lists, reads, and patches project for owner', async () => {
     const app = createApp()
-    const token = await registerAndGetToken(app, 'owner@example.com')
+    const token = await registerAndGetToken(app, `owner-${Date.now()}@example.com`)
 
     const createResponse = await app.request('/projects', {
       method: 'POST',
@@ -67,8 +68,8 @@ describe('project routes', () => {
 
   it('blocks access from non-owner user', async () => {
     const app = createApp()
-    const ownerToken = await registerAndGetToken(app, 'owner@example.com')
-    const otherToken = await registerAndGetToken(app, 'other@example.com')
+    const ownerToken = await registerAndGetToken(app, `owner-${Date.now()}@example.com`)
+    const otherToken = await registerAndGetToken(app, `other-${Date.now()}@example.com`)
 
     const createResponse = await app.request('/projects', {
       method: 'POST',

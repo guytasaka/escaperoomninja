@@ -4,3 +4,7 @@ dist/
 .env
 .DS_Store
 coverage/
+*.log
+*.tsbuildinfo
+.env.local
+.env.*.local

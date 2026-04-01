@@ -1,13 +1,13 @@
 import type { AuthSession } from '../auth/types'
 import type { ProjectService } from '../projects/service'
 
-import type { InMemoryRevisionStore } from './store'
+import type { RevisionStore } from './store'
 import type { RevisionSnapshot } from './types'
 
 export class RevisionService {
   constructor(
     private readonly projectService: ProjectService,
-    private readonly store: InMemoryRevisionStore,
+    private readonly store: RevisionStore,
   ) {}
 
   async create(

@@ -48,7 +48,7 @@ export class MaterialsService {
       })
 
       const safeSlug = encodeURIComponent(item.name.toLowerCase().replaceAll(' ', '-'))
-      await this.materialStore.update(item.id, {
+      await this.materialStore.update(item.id, projectId, {
         vendorUrl: `https://shop.escaperoomninja.local/items/${safeSlug}`,
         alternatives: generated.content
           .split(/\n|\./)
@@ -75,7 +75,7 @@ export class MaterialsService {
     >,
   ): Promise<MaterialItem | null> {
     await this.projectService.getById(session, projectId)
-    return await this.materialStore.update(itemId, input)
+    return await this.materialStore.update(itemId, projectId, input)
   }
 
   async getBudgetSummary(

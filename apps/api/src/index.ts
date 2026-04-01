@@ -3,29 +3,30 @@ import { createDbClient } from '@escaperoomninja/db'
 import { Hono } from 'hono'
 
 import { AudienceService } from './audience/service'
-import { InMemoryAudienceStore } from './audience/store'
+import { DrizzleAudienceStore, InMemoryAudienceStore } from './audience/store'
 import { AuthService } from './auth/service'
 import { DrizzleAuthUserStore, InMemoryAuthUserStore } from './auth/store'
 import { BusinessService } from './business/service'
 import { CollaboratorService } from './collaborators/service'
-import { InMemoryCollaboratorStore } from './collaborators/store'
+import { DrizzleCollaboratorStore, InMemoryCollaboratorStore } from './collaborators/store'
 import { ConceptService } from './concept/service'
 import { ExportService } from './export/service'
 import { GenerationQueueRuntime } from './generation/queue'
 import { GenerationService } from './generation/service'
+import { DrizzleGenerationJobStore, InMemoryGenerationJobStore } from './generation/store'
 import { LayoutService } from './layout/service'
-import { InMemoryLayoutStore } from './layout/store'
+import { DrizzleLayoutStore, InMemoryLayoutStore } from './layout/store'
 import { MaterialsService } from './materials/service'
-import { InMemoryMaterialStore } from './materials/store'
+import { DrizzleMaterialStore, InMemoryMaterialStore } from './materials/store'
 import { NarrativeService } from './narratives/service'
-import { InMemoryNarrativeStore } from './narratives/store'
+import { DrizzleNarrativeStore, InMemoryNarrativeStore } from './narratives/store'
 import { PaymentService } from './payment/service'
 import { ProjectService } from './projects/service'
 import { DrizzleProjectStore, InMemoryProjectStore } from './projects/store'
 import { PuzzleService } from './puzzles/service'
-import { InMemoryPuzzleStore } from './puzzles/store'
+import { DrizzlePuzzleStore, InMemoryPuzzleStore } from './puzzles/store'
 import { RevisionService } from './revisions/service'
-import { InMemoryRevisionStore } from './revisions/store'
+import { DrizzleRevisionStore, InMemoryRevisionStore } from './revisions/store'
 import { createAudienceRoutes } from './routes/audience'
 import { createAuthRoutes } from './routes/auth'
 import { createBusinessRoutes } from './routes/business'
@@ -50,6 +51,16 @@ export const createApp = (): Hono => {
   const db = process.env.DATABASE_URL ? createDbClient(process.env.DATABASE_URL) : null
   const authStore = db ? new DrizzleAuthUserStore(db) : new InMemoryAuthUserStore()
   const projectStore = db ? new DrizzleProjectStore(db) : new InMemoryProjectStore()
+  const collaboratorStore = db ? new DrizzleCollaboratorStore(db) : new InMemoryCollaboratorStore()
+  const revisionStore = db ? new DrizzleRevisionStore(db) : new InMemoryRevisionStore()
+  const layoutStore = db ? new DrizzleLayoutStore(db) : new InMemoryLayoutStore()
+  const narrativeStore = db ? new DrizzleNarrativeStore(db) : new InMemoryNarrativeStore()
+  const puzzleStore = db ? new DrizzlePuzzleStore(db) : new InMemoryPuzzleStore()
+  const materialStore = db ? new DrizzleMaterialStore(db) : new InMemoryMaterialStore()
+  const audienceStore = db ? new DrizzleAudienceStore(db) : new InMemoryAudienceStore()
+  const generationJobStore = db
+    ? new DrizzleGenerationJobStore(db)
+    : new InMemoryGenerationJobStore()
   const authService = new AuthService(authStore, defaultSecret)
   const projectService = new ProjectService(projectStore)
   const taskRouter = new TaskRouter({
@@ -63,29 +74,29 @@ export const createApp = (): Hono => {
     taskRouter.getTextModel(),
   )
   const audienceService = new AudienceService(
-    new InMemoryAudienceStore(),
+    audienceStore,
     projectService,
     taskRouter.getTextProvider(),
     taskRouter.getTextModel(),
   )
   const puzzleService = new PuzzleService(
-    new InMemoryPuzzleStore(),
+    puzzleStore,
     projectService,
     audienceService,
     taskRouter.getTextProvider(),
     taskRouter.getTextModel(),
   )
   const narrativeService = new NarrativeService(
-    new InMemoryNarrativeStore(),
+    narrativeStore,
     projectService,
     taskRouter.getTextProvider(),
     taskRouter.getTextModel(),
   )
-  const layoutService = new LayoutService(new InMemoryLayoutStore(), projectService)
-  const generationQueue = new GenerationQueueRuntime()
+  const layoutService = new LayoutService(layoutStore, projectService)
+  const generationQueue = new GenerationQueueRuntime(generationJobStore)
   const generationService = new GenerationService(projectService, generationQueue)
   const materialsService = new MaterialsService(
-    new InMemoryMaterialStore(),
+    materialStore,
     projectService,
     puzzleService,
     taskRouter.getTextProvider(),
@@ -99,11 +110,8 @@ export const createApp = (): Hono => {
   )
   const exportService = new ExportService(projectService, generationService)
   const paymentService = new PaymentService(projectService)
-  const collaboratorService = new CollaboratorService(
-    projectService,
-    new InMemoryCollaboratorStore(),
-  )
-  const revisionService = new RevisionService(projectService, new InMemoryRevisionStore())
+  const collaboratorService = new CollaboratorService(projectService, collaboratorStore)
+  const revisionService = new RevisionService(projectService, revisionStore)
 
   app.get('/health', (c) => {
     return c.json({ data: { ok: true } })

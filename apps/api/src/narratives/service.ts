@@ -59,6 +59,6 @@ export class NarrativeService {
     content: string,
   ): Promise<NarrativeScript | null> {
     await this.projectService.getById(session, projectId)
-    return await this.narrativeStore.update(scriptId, content)
+    return await this.narrativeStore.update(scriptId, projectId, content)
   }
 }
