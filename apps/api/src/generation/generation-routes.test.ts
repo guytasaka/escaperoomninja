@@ -12,6 +12,7 @@ const registerAndGetToken = async (app: ReturnType<typeof createApp>, email: str
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email, password: 'supersecret123' }),
   })
+  expect(response.status).toBe(201)
   const payload = (await response.json()) as { data: { token: string } }
   return payload.data.token
 }
@@ -22,6 +23,7 @@ const createProject = async (app: ReturnType<typeof createApp>, token: string) =
     headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
     body: JSON.stringify({ name: 'Generation Room', genre: 'sci-fi', roomType: 'single-room' }),
   })
+  expect(response.status).toBe(201)
   return (await response.json()) as { data: { project: { id: string } } }
 }
 

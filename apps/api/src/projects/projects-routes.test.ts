@@ -11,6 +11,7 @@ const registerAndGetToken = async (app: ReturnType<typeof createApp>, email: str
       password: 'supersecret123',
     }),
   })
+  expect(response.status).toBe(201)
 
   const json = (await response.json()) as { data: { token: string } }
   return json.data.token

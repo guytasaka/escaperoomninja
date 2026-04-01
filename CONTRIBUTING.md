@@ -28,7 +28,7 @@ pnpm dev
 
 - Start Postgres locally (for example `docker compose up -d postgres`)
 - Run DB-backed API regression suite:
-  - `DATABASE_URL="postgresql://forge:forge_dev@localhost:5432/escape_room_forge" pnpm --filter @escaperoomninja/api test:db`
+  - `DATABASE_URL="postgresql://forge:forge_dev@localhost:5432/escape_room_forge" pnpm test:db`
 
 ## Pull requests
 

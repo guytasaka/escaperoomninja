@@ -17,12 +17,15 @@ const sleep = async (ms: number) => {
   await new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const uniqueEmail = (prefix: string) => `${prefix}-${Date.now()}-${Math.random()}@example.com`
+
 const registerAndGetToken = async (app: ReturnType<typeof createApp>, email: string) => {
   const response = await app.request('/auth/register', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email, password: 'supersecret123' }),
   })
+  expect(response.status).toBe(201)
   const payload = (await response.json()) as { data: { token: string } }
   return payload.data.token
 }
@@ -37,6 +40,7 @@ const createProject = async (app: ReturnType<typeof createApp>, token: string) =
       roomType: 'single-room',
     }),
   })
+  expect(response.status).toBe(201)
   return (await response.json()) as { data: { project: { id: string } } }
 }
 
@@ -51,16 +55,12 @@ describeDb('db mode integration', () => {
       await sql.unsafe(sqlText)
     }
 
-    await sql.unsafe(
-      'TRUNCATE TABLE generation_jobs, audience_profiles, materials, puzzles, narratives, layouts, revisions, collaborator_comments, collaborators, projects, users RESTART IDENTITY CASCADE',
-    )
-
     await sql.end()
   })
 
   it('persists audience profile and generation jobs via drizzle stores', async () => {
     const app = createApp()
-    const token = await registerAndGetToken(app, 'dbmode@example.com')
+    const token = await registerAndGetToken(app, uniqueEmail('dbmode'))
     const project = await createProject(app, token)
     const projectId = project.data.project.id
 
@@ -112,7 +112,7 @@ describeDb('db mode integration', () => {
 
   it('persists puzzle, material, layout, narrative, collaborator, and revision data across app instances', async () => {
     const app = createApp()
-    const token = await registerAndGetToken(app, 'dbmode-persistence@example.com')
+    const token = await registerAndGetToken(app, uniqueEmail('dbmode-persistence'))
     const project = await createProject(app, token)
     const projectId = project.data.project.id
 
@@ -236,7 +236,7 @@ describeDb('db mode integration', () => {
 
   it('rejects cross-project updates for puzzle, material, and narrative records', async () => {
     const app = createApp()
-    const token = await registerAndGetToken(app, 'dbmode-cross-project@example.com')
+    const token = await registerAndGetToken(app, uniqueEmail('dbmode-cross-project'))
     const projectA = await createProject(app, token)
     const projectB = await createProject(app, token)
     const projectAId = projectA.data.project.id

@@ -48,7 +48,7 @@ pnpm build
 ## API DB-mode test
 
 ```bash
-DATABASE_URL="postgresql://forge:forge_dev@localhost:5432/escape_room_forge" pnpm --filter @escaperoomninja/api test:db
+DATABASE_URL="postgresql://forge:forge_dev@localhost:5432/escape_room_forge" pnpm test:db
 ```
 
 ## Contributor docs
