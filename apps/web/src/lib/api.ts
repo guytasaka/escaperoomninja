@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { ProjectCard } from '../types'
+import type { AudienceProfileCard, ProjectCard, PuzzleCard } from '../types'
 
 const projectSchema: z.ZodType<ProjectCard> = z.object({
   id: z.string(),
@@ -13,6 +13,28 @@ const projectSchema: z.ZodType<ProjectCard> = z.object({
 
 const projectListSchema = z.array(projectSchema)
 
+const audienceProfileSchema: z.ZodType<AudienceProfileCard> = z.object({
+  projectId: z.string(),
+  groupSize: z.number(),
+  difficulty: z.enum(['easy', 'medium', 'hard']),
+  audienceType: z.enum(['friends', 'family', 'corporate', 'enthusiasts']),
+  psychologyProfile: z.string(),
+  recommendations: z.array(z.string()),
+})
+
+const puzzleSchema: z.ZodType<PuzzleCard> = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  title: z.string(),
+  type: z.string(),
+  difficulty: z.enum(['easy', 'medium', 'hard']),
+  estimatedMinutes: z.number(),
+  description: z.string(),
+  order: z.number(),
+})
+
+const puzzleListSchema = z.array(puzzleSchema)
+
 export interface CreateProjectInput {
   name: string
   genre: string
@@ -22,6 +44,18 @@ export interface CreateProjectInput {
 export interface GenerateConceptInput {
   projectId: string
   prompt: string
+}
+
+export interface GenerateAudienceInput {
+  projectId: string
+  groupSize: number
+  difficulty: AudienceProfileCard['difficulty']
+  audienceType: AudienceProfileCard['audienceType']
+}
+
+export interface GeneratePuzzlesInput {
+  projectId: string
+  count: number
 }
 
 export const listProjects = async (apiUrl: string, token: string): Promise<ProjectCard[]> => {
@@ -101,4 +135,91 @@ export const generateMoodBoard = async (
 
   const payload = (await response.json()) as { data: { images: string[] } }
   return payload.data.images
+}
+
+export const generateAudience = async (
+  apiUrl: string,
+  token: string,
+  input: GenerateAudienceInput,
+): Promise<AudienceProfileCard> => {
+  const response = await fetch(`${apiUrl}/audience/recommendations`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate audience profile: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { profile: unknown } }
+  return audienceProfileSchema.parse(payload.data.profile)
+}
+
+export const listPuzzles = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<PuzzleCard[]> => {
+  const response = await fetch(`${apiUrl}/puzzles/${projectId}`, {
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to list puzzles: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { puzzles: unknown } }
+  return puzzleListSchema.parse(payload.data.puzzles)
+}
+
+export const generatePuzzles = async (
+  apiUrl: string,
+  token: string,
+  input: GeneratePuzzlesInput,
+): Promise<PuzzleCard[]> => {
+  const response = await fetch(`${apiUrl}/puzzles/generate`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate puzzles: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { puzzles: unknown } }
+  return puzzleListSchema.parse(payload.data.puzzles)
+}
+
+export const updatePuzzle = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+  puzzleId: string,
+  input: Partial<
+    Pick<PuzzleCard, 'title' | 'difficulty' | 'estimatedMinutes' | 'description' | 'order'>
+  >,
+): Promise<PuzzleCard> => {
+  const response = await fetch(`${apiUrl}/puzzles/${puzzleId}?projectId=${projectId}`, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to update puzzle: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { puzzle: unknown } }
+  return puzzleSchema.parse(payload.data.puzzle)
 }
