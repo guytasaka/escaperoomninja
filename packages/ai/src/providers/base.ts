@@ -16,7 +16,24 @@ export interface TextGenerationResult {
   }
 }
 
+export interface ImageGenerationConfig {
+  prompt: string
+  width?: number
+  height?: number
+  style?: string
+  count?: number
+}
+
+export interface ImageGenerationResult {
+  urls: string[]
+  provider: string
+}
+
 export abstract class AIProvider {
   abstract generateText(config: TextGenerationConfig): Promise<TextGenerationResult>
   abstract generateTextStream(config: TextGenerationConfig): AsyncGenerator<string>
+}
+
+export abstract class ImageProvider {
+  abstract generateImages(config: ImageGenerationConfig): Promise<ImageGenerationResult>
 }

@@ -13,6 +13,11 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@escaperoomninja/ai": ["packages/ai/src/index.ts"],
+      "@escaperoomninja/shared": ["packages/shared/src/index.ts"]
+    }
   }
 }
