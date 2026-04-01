@@ -62,3 +62,50 @@ export interface PuzzleAnalyticsCard {
   timingBlueprint: TimingBlueprintRow[]
   totalMinutes: number
 }
+
+export type NarrativeCategory = 'intro' | 'hint' | 'gm' | 'ending'
+
+export interface NarrativeScriptCard {
+  id: string
+  projectId: string
+  category: NarrativeCategory
+  title: string
+  content: string
+}
+
+export interface TtsPreviewCard {
+  audioUrl: string
+  voice: string
+  estimatedDurationSec: number
+}
+
+export interface LayoutZoneCard {
+  id: string
+  name: string
+  x: number
+  y: number
+  width: number
+  height: number
+  color: string
+}
+
+export interface LayoutObjectCard {
+  id: string
+  kind: string
+  label: string
+  x: number
+  y: number
+}
+
+export interface RoomLayoutCard {
+  projectId: string
+  width: number
+  height: number
+  zones: LayoutZoneCard[]
+  objects: LayoutObjectCard[]
+  overlays: {
+    lighting: boolean
+    sound: boolean
+    emergency: boolean
+  }
+}

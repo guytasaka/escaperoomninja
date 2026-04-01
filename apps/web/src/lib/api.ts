@@ -2,10 +2,13 @@ import { z } from 'zod'
 
 import type {
   AudienceProfileCard,
+  NarrativeScriptCard,
   ProjectCard,
   PuzzleAnalyticsCard,
   PuzzleCard,
   PuzzleFlowGraph,
+  RoomLayoutCard,
+  TtsPreviewCard,
 } from '../types'
 
 const projectSchema: z.ZodType<ProjectCard> = z.object({
@@ -77,6 +80,53 @@ const puzzleAnalyticsSchema: z.ZodType<PuzzleAnalyticsCard> = z.object({
   totalMinutes: z.number(),
 })
 
+const narrativeScriptSchema: z.ZodType<NarrativeScriptCard> = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  category: z.enum(['intro', 'hint', 'gm', 'ending']),
+  title: z.string(),
+  content: z.string(),
+})
+
+const narrativeListSchema = z.array(narrativeScriptSchema)
+
+const ttsPreviewSchema: z.ZodType<TtsPreviewCard> = z.object({
+  audioUrl: z.string(),
+  voice: z.string(),
+  estimatedDurationSec: z.number(),
+})
+
+const roomLayoutSchema: z.ZodType<RoomLayoutCard> = z.object({
+  projectId: z.string(),
+  width: z.number(),
+  height: z.number(),
+  zones: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number(),
+      color: z.string(),
+    }),
+  ),
+  objects: z.array(
+    z.object({
+      id: z.string(),
+      kind: z.string(),
+      label: z.string(),
+      x: z.number(),
+      y: z.number(),
+    }),
+  ),
+  overlays: z.object({
+    lighting: z.boolean(),
+    sound: z.boolean(),
+    emergency: z.boolean(),
+  }),
+})
+
 export interface CreateProjectInput {
   name: string
   genre: string
@@ -98,6 +148,11 @@ export interface GenerateAudienceInput {
 export interface GeneratePuzzlesInput {
   projectId: string
   count: number
+}
+
+export interface GenerateNarrativeInput {
+  projectId: string
+  tone?: string
 }
 
 export const listProjects = async (apiUrl: string, token: string): Promise<ProjectCard[]> => {
@@ -298,4 +353,152 @@ export const getPuzzleAnalytics = async (
 
   const payload = (await response.json()) as { data: { analytics: unknown } }
   return puzzleAnalyticsSchema.parse(payload.data.analytics)
+}
+
+export const generateNarratives = async (
+  apiUrl: string,
+  token: string,
+  input: GenerateNarrativeInput,
+): Promise<NarrativeScriptCard[]> => {
+  const response = await fetch(`${apiUrl}/narratives/generate`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate narratives: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { scripts: unknown } }
+  return narrativeListSchema.parse(payload.data.scripts)
+}
+
+export const listNarratives = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<NarrativeScriptCard[]> => {
+  const response = await fetch(`${apiUrl}/narratives/${projectId}`, {
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to list narratives: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { scripts: unknown } }
+  return narrativeListSchema.parse(payload.data.scripts)
+}
+
+export const updateNarrativeScript = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+  scriptId: string,
+  content: string,
+): Promise<NarrativeScriptCard> => {
+  const response = await fetch(`${apiUrl}/narratives/${scriptId}?projectId=${projectId}`, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ content }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to update narrative script: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { script: unknown } }
+  return narrativeScriptSchema.parse(payload.data.script)
+}
+
+export const previewNarrativeTts = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+  text: string,
+  voice: string,
+): Promise<TtsPreviewCard> => {
+  const response = await fetch(`${apiUrl}/preview/tts`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ projectId, text, voice }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to preview TTS: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: unknown }
+  return ttsPreviewSchema.parse(payload.data)
+}
+
+export const saveLayout = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+  layout: Omit<RoomLayoutCard, 'projectId'>,
+): Promise<RoomLayoutCard> => {
+  const response = await fetch(`${apiUrl}/layouts/${projectId}`, {
+    method: 'PUT',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(layout),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to save layout: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { layout: unknown } }
+  return roomLayoutSchema.parse(payload.data.layout)
+}
+
+export const getLayout = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<RoomLayoutCard | null> => {
+  const response = await fetch(`${apiUrl}/layouts/${projectId}`, {
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to load layout: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { layout: unknown } }
+  if (!payload.data.layout) {
+    return null
+  }
+
+  return roomLayoutSchema.parse(payload.data.layout)
+}
+
+export const exportLayoutSvg = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<string> => {
+  const response = await fetch(`${apiUrl}/layouts/${projectId}/export-svg`, {
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to export layout SVG: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { svg: string } }
+  return payload.data.svg
 }

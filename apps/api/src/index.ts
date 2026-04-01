@@ -6,6 +6,10 @@ import { InMemoryAudienceStore } from './audience/store'
 import { AuthService } from './auth/service'
 import { InMemoryAuthUserStore } from './auth/store'
 import { ConceptService } from './concept/service'
+import { LayoutService } from './layout/service'
+import { InMemoryLayoutStore } from './layout/store'
+import { NarrativeService } from './narratives/service'
+import { InMemoryNarrativeStore } from './narratives/store'
 import { ProjectService } from './projects/service'
 import { InMemoryProjectStore } from './projects/store'
 import { PuzzleService } from './puzzles/service'
@@ -13,6 +17,9 @@ import { InMemoryPuzzleStore } from './puzzles/store'
 import { createAudienceRoutes } from './routes/audience'
 import { createAuthRoutes } from './routes/auth'
 import { createConceptRoutes } from './routes/concept'
+import { createLayoutRoutes } from './routes/layouts'
+import { createNarrativeRoutes } from './routes/narratives'
+import { createPreviewRoutes } from './routes/preview'
 import { createProjectRoutes } from './routes/projects'
 import { createPuzzleRoutes } from './routes/puzzles'
 
@@ -46,6 +53,13 @@ export const createApp = (): Hono => {
     taskRouter.getTextProvider(),
     taskRouter.getTextModel(),
   )
+  const narrativeService = new NarrativeService(
+    new InMemoryNarrativeStore(),
+    projectService,
+    taskRouter.getTextProvider(),
+    taskRouter.getTextModel(),
+  )
+  const layoutService = new LayoutService(new InMemoryLayoutStore(), projectService)
 
   app.get('/health', (c) => {
     return c.json({ data: { ok: true } })
@@ -56,6 +70,9 @@ export const createApp = (): Hono => {
   app.route('/concept', createConceptRoutes(authService, projectService, conceptService))
   app.route('/audience', createAudienceRoutes(authService, audienceService))
   app.route('/puzzles', createPuzzleRoutes(authService, puzzleService))
+  app.route('/narratives', createNarrativeRoutes(authService, narrativeService))
+  app.route('/preview', createPreviewRoutes(authService, projectService))
+  app.route('/layouts', createLayoutRoutes(authService, layoutService))
 
   return app
 }
