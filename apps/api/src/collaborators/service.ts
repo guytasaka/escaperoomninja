@@ -1,13 +1,13 @@
 import type { AuthSession } from '../auth/types'
 import type { ProjectService } from '../projects/service'
 
-import type { InMemoryCollaboratorStore } from './store'
+import type { CollaboratorStore } from './store'
 import type { CollaboratorComment, CollaboratorRecord } from './types'
 
 export class CollaboratorService {
   constructor(
     private readonly projectService: ProjectService,
-    private readonly store: InMemoryCollaboratorStore,
+    private readonly store: CollaboratorStore,
   ) {}
 
   async invite(

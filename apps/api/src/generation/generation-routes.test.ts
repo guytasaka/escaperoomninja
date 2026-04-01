@@ -28,7 +28,7 @@ const createProject = async (app: ReturnType<typeof createApp>, token: string) =
 describe('generation routes', () => {
   it('queues generation jobs and tracks completion', async () => {
     const app = createApp()
-    const token = await registerAndGetToken(app, 'generation@example.com')
+    const token = await registerAndGetToken(app, `generation-${Date.now()}@example.com`)
     const project = await createProject(app, token)
     const projectId = project.data.project.id
 
@@ -39,14 +39,31 @@ describe('generation routes', () => {
     })
     expect(startResponse.status).toBe(202)
 
-    await sleep(30)
-
-    const listResponse = await app.request(`/generation/${projectId}`, {
-      headers: { authorization: `Bearer ${token}` },
-    })
-    expect(listResponse.status).toBe(200)
-    const listed = (await listResponse.json()) as {
+    let listed: {
       data: { jobs: Array<{ status: string; assetType: string; attempt: number }> }
+    } | null = null
+
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      const listResponse = await app.request(`/generation/${projectId}`, {
+        headers: { authorization: `Bearer ${token}` },
+      })
+      expect(listResponse.status).toBe(200)
+      listed = (await listResponse.json()) as {
+        data: { jobs: Array<{ status: string; assetType: string; attempt: number }> }
+      }
+
+      if (
+        listed.data.jobs.length === 8 &&
+        listed.data.jobs.every((job) => job.status === 'complete')
+      ) {
+        break
+      }
+
+      await sleep(40)
+    }
+
+    if (!listed) {
+      throw new Error('generation list response was not captured')
     }
 
     expect(listed.data.jobs.length).toBe(8)

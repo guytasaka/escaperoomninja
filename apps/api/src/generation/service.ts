@@ -23,13 +23,13 @@ export class GenerationService {
 
   async start(session: AuthSession, projectId: string): Promise<{ runId: string }> {
     await this.projectService.getById(session, projectId)
-    const runId = this.queueRuntime.enqueue(projectId, assetChecklist)
+    const runId = await this.queueRuntime.enqueue(projectId, assetChecklist)
     return { runId }
   }
 
   async list(session: AuthSession, projectId: string): Promise<GenerationJobRecord[]> {
     await this.projectService.getById(session, projectId)
-    return this.queueRuntime.list(projectId)
+    return await this.queueRuntime.list(projectId)
   }
 
   subscribe(projectId: string, listener: (event: GenerationEvent) => void): () => void {

@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.json",
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:db": "vitest run src/integration/db-mode-routes.test.ts src/auth/auth-routes.test.ts src/projects/projects-routes.test.ts src/generation/generation-routes.test.ts"
   },
   "dependencies": {
     "@escaperoomninja/ai": "workspace:*",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "postgres": "^3.4.5",
     "typescript": "^5.6.3",
     "vitest": "^2.1.4"
   }

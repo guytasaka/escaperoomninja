@@ -111,7 +111,7 @@ export class PuzzleService {
     >,
   ): Promise<PuzzleRecord | null> {
     await this.projectService.getById(session, projectId)
-    return await this.puzzleStore.update(puzzleId, input)
+    return await this.puzzleStore.update(puzzleId, projectId, input)
   }
 
   async getFlow(session: AuthSession, projectId: string): Promise<PuzzleFlowView> {
