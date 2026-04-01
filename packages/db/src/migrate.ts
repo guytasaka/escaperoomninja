@@ -1,1 +1,1 @@
-export const migratePlaceholder = 'run drizzle migrations here'
+export const migratePlaceholder = 'use `pnpm --filter @escaperoomninja/db migrate`'

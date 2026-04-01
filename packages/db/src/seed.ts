@@ -1,1 +1,1 @@
-export const seedPlaceholder = 'run db seeds here'
+export const seedPlaceholder = 'seed scripts for puzzle catalog and prompt templates'

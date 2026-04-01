@@ -2,14 +2,23 @@
   "name": "@escaperoomninja/api",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "dev": "node -e \"console.log('api dev placeholder')\"",
-    "build": "node -e \"console.log('api build placeholder')\"",
+    "dev": "node -e \"console.log('api dev wiring pending node server bootstrap')\"",
+    "build": "tsc -p tsconfig.json",
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node -e \"console.log('api test placeholder')\""
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "hono": "^4.6.5",
+    "jose": "^5.9.6",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "@types/bcryptjs": "^2.4.6",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
   }
 }
