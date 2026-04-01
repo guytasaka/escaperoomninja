@@ -7,6 +7,30 @@ import type { AudienceService } from '../audience/service'
 import type { PuzzleStore } from './store'
 import type { NewPuzzleInput, PuzzleRecord } from './types'
 
+export interface PuzzleFlowView {
+  nodes: Array<{ id: string; label: string; order: number; difficulty: PuzzleRecord['difficulty'] }>
+  edges: Array<{ from: string; to: string }>
+}
+
+export interface PuzzleDifficultyPoint {
+  order: number
+  difficultyScore: number
+  title: string
+}
+
+export interface PuzzleTimingBlueprintRow {
+  order: number
+  title: string
+  estimatedMinutes: number
+  cumulativeMinutes: number
+}
+
+export interface PuzzleAnalyticsView {
+  difficultyCurve: PuzzleDifficultyPoint[]
+  timingBlueprint: PuzzleTimingBlueprintRow[]
+  totalMinutes: number
+}
+
 export class PuzzleService {
   constructor(
     private readonly puzzleStore: PuzzleStore,
@@ -88,5 +112,57 @@ export class PuzzleService {
   ): Promise<PuzzleRecord | null> {
     await this.projectService.getById(session, projectId)
     return await this.puzzleStore.update(puzzleId, input)
+  }
+
+  async getFlow(session: AuthSession, projectId: string): Promise<PuzzleFlowView> {
+    const puzzles = await this.list(session, projectId)
+    const nodes = puzzles.map((puzzle) => ({
+      id: puzzle.id,
+      label: puzzle.title,
+      order: puzzle.order,
+      difficulty: puzzle.difficulty,
+    }))
+
+    const edges = puzzles
+      .slice(0, -1)
+      .map((puzzle, index) => ({
+        from: puzzle.id,
+        to: puzzles[index + 1]?.id ?? puzzle.id,
+      }))
+      .filter((edge) => edge.from !== edge.to)
+
+    return { nodes, edges }
+  }
+
+  async getAnalytics(session: AuthSession, projectId: string): Promise<PuzzleAnalyticsView> {
+    const puzzles = await this.list(session, projectId)
+    const difficultyMap: Record<PuzzleRecord['difficulty'], number> = {
+      easy: 1,
+      medium: 2,
+      hard: 3,
+    }
+
+    let cumulative = 0
+    const timingBlueprint = puzzles.map((puzzle) => {
+      cumulative += puzzle.estimatedMinutes
+      return {
+        order: puzzle.order,
+        title: puzzle.title,
+        estimatedMinutes: puzzle.estimatedMinutes,
+        cumulativeMinutes: cumulative,
+      }
+    })
+
+    const difficultyCurve = puzzles.map((puzzle) => ({
+      order: puzzle.order,
+      difficultyScore: difficultyMap[puzzle.difficulty],
+      title: puzzle.title,
+    }))
+
+    return {
+      difficultyCurve,
+      timingBlueprint,
+      totalMinutes: cumulative,
+    }
   }
 }

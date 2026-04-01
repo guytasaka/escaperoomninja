@@ -70,6 +70,34 @@ export const createPuzzleRoutes = (
     }
   })
 
+  puzzles.get('/:projectId/flow', async (c) => {
+    const session = await authenticate(c, authService)
+    if (session instanceof Response) {
+      return session
+    }
+
+    try {
+      const flow = await puzzleService.getFlow(session, c.req.param('projectId'))
+      return c.json({ data: { flow } })
+    } catch (error) {
+      return mapDomainError(c, error)
+    }
+  })
+
+  puzzles.get('/:projectId/analytics', async (c) => {
+    const session = await authenticate(c, authService)
+    if (session instanceof Response) {
+      return session
+    }
+
+    try {
+      const analytics = await puzzleService.getAnalytics(session, c.req.param('projectId'))
+      return c.json({ data: { analytics } })
+    } catch (error) {
+      return mapDomainError(c, error)
+    }
+  })
+
   puzzles.patch('/:puzzleId', async (c) => {
     const session = await authenticate(c, authService)
     if (session instanceof Response) {

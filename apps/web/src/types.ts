@@ -26,3 +26,39 @@ export interface PuzzleCard {
   description: string
   order: number
 }
+
+export interface PuzzleFlowNode {
+  id: string
+  label: string
+  order: number
+  difficulty: 'easy' | 'medium' | 'hard'
+}
+
+export interface PuzzleFlowEdge {
+  from: string
+  to: string
+}
+
+export interface PuzzleFlowGraph {
+  nodes: PuzzleFlowNode[]
+  edges: PuzzleFlowEdge[]
+}
+
+export interface DifficultyCurvePoint {
+  order: number
+  difficultyScore: number
+  title: string
+}
+
+export interface TimingBlueprintRow {
+  order: number
+  title: string
+  estimatedMinutes: number
+  cumulativeMinutes: number
+}
+
+export interface PuzzleAnalyticsCard {
+  difficultyCurve: DifficultyCurvePoint[]
+  timingBlueprint: TimingBlueprintRow[]
+  totalMinutes: number
+}

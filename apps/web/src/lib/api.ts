@@ -1,6 +1,12 @@
 import { z } from 'zod'
 
-import type { AudienceProfileCard, ProjectCard, PuzzleCard } from '../types'
+import type {
+  AudienceProfileCard,
+  ProjectCard,
+  PuzzleAnalyticsCard,
+  PuzzleCard,
+  PuzzleFlowGraph,
+} from '../types'
 
 const projectSchema: z.ZodType<ProjectCard> = z.object({
   id: z.string(),
@@ -34,6 +40,42 @@ const puzzleSchema: z.ZodType<PuzzleCard> = z.object({
 })
 
 const puzzleListSchema = z.array(puzzleSchema)
+
+const puzzleFlowSchema: z.ZodType<PuzzleFlowGraph> = z.object({
+  nodes: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+      order: z.number(),
+      difficulty: z.enum(['easy', 'medium', 'hard']),
+    }),
+  ),
+  edges: z.array(
+    z.object({
+      from: z.string(),
+      to: z.string(),
+    }),
+  ),
+})
+
+const puzzleAnalyticsSchema: z.ZodType<PuzzleAnalyticsCard> = z.object({
+  difficultyCurve: z.array(
+    z.object({
+      order: z.number(),
+      difficultyScore: z.number(),
+      title: z.string(),
+    }),
+  ),
+  timingBlueprint: z.array(
+    z.object({
+      order: z.number(),
+      title: z.string(),
+      estimatedMinutes: z.number(),
+      cumulativeMinutes: z.number(),
+    }),
+  ),
+  totalMinutes: z.number(),
+})
 
 export interface CreateProjectInput {
   name: string
@@ -222,4 +264,38 @@ export const updatePuzzle = async (
 
   const payload = (await response.json()) as { data: { puzzle: unknown } }
   return puzzleSchema.parse(payload.data.puzzle)
+}
+
+export const getPuzzleFlow = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<PuzzleFlowGraph> => {
+  const response = await fetch(`${apiUrl}/puzzles/${projectId}/flow`, {
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to load puzzle flow: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { flow: unknown } }
+  return puzzleFlowSchema.parse(payload.data.flow)
+}
+
+export const getPuzzleAnalytics = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<PuzzleAnalyticsCard> => {
+  const response = await fetch(`${apiUrl}/puzzles/${projectId}/analytics`, {
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to load puzzle analytics: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { analytics: unknown } }
+  return puzzleAnalyticsSchema.parse(payload.data.analytics)
 }

@@ -80,5 +80,27 @@ describe('puzzle routes', () => {
     expect(patchResponse.status).toBe(200)
     const patched = (await patchResponse.json()) as { data: { puzzle: { title: string } } }
     expect(patched.data.puzzle.title).toBe('Updated Puzzle Title')
+
+    const flowResponse = await app.request(`/puzzles/${projectId}/flow`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(flowResponse.status).toBe(200)
+    const flowPayload = (await flowResponse.json()) as {
+      data: { flow: { nodes: unknown[]; edges: unknown[] } }
+    }
+    expect(flowPayload.data.flow.nodes.length).toBe(3)
+
+    const analyticsResponse = await app.request(`/puzzles/${projectId}/analytics`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(analyticsResponse.status).toBe(200)
+    const analyticsPayload = (await analyticsResponse.json()) as {
+      data: {
+        analytics: { difficultyCurve: unknown[]; timingBlueprint: unknown[]; totalMinutes: number }
+      }
+    }
+    expect(analyticsPayload.data.analytics.difficultyCurve.length).toBe(3)
+    expect(analyticsPayload.data.analytics.timingBlueprint.length).toBe(3)
+    expect(analyticsPayload.data.analytics.totalMinutes).toBeGreaterThan(0)
   })
 })

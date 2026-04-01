@@ -4,6 +4,8 @@ export {
   generateConcept,
   generateMoodBoard,
   generatePuzzles,
+  getPuzzleAnalytics,
+  getPuzzleFlow,
   listProjects,
   listPuzzles,
   updatePuzzle,

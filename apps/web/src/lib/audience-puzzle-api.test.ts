@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { generateAudience, generatePuzzles, updatePuzzle } from './api'
+import {
+  generateAudience,
+  generatePuzzles,
+  getPuzzleAnalytics,
+  getPuzzleFlow,
+  updatePuzzle,
+} from './api'
 
 describe('audience and puzzle api client', () => {
   afterEach(() => {
@@ -91,5 +97,44 @@ describe('audience and puzzle api client', () => {
     })
 
     expect(updated.title).toBe('Updated Cipher Door')
+  })
+
+  it('loads puzzle flow and analytics views', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              flow: {
+                nodes: [{ id: 'pz-1', label: 'Cipher Door', order: 1, difficulty: 'medium' }],
+                edges: [],
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              analytics: {
+                difficultyCurve: [{ order: 1, title: 'Cipher Door', difficultyScore: 2 }],
+                timingBlueprint: [
+                  { order: 1, title: 'Cipher Door', estimatedMinutes: 12, cumulativeMinutes: 12 },
+                ],
+                totalMinutes: 12,
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+      )
+
+    const flow = await getPuzzleFlow('https://api.test', 'token', 'p1')
+    const analytics = await getPuzzleAnalytics('https://api.test', 'token', 'p1')
+
+    expect(flow.nodes[0]?.label).toBe('Cipher Door')
+    expect(analytics.totalMinutes).toBe(12)
   })
 })
