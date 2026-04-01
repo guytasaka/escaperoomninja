@@ -158,3 +158,39 @@ export interface GenerationJobCard {
   outputUrl: string | null
   error: string | null
 }
+
+export interface ExportPackageCard {
+  projectId: string
+  zipUrl: string
+  manifest: {
+    generatedAt: string
+    files: Array<{ assetName: string; outputUrl: string | null; status: string }>
+  }
+}
+
+export interface CheckoutSessionCard {
+  projectId: string
+  checkoutUrl: string
+  sessionId: string
+}
+
+export interface CollaboratorCard {
+  id: string
+  projectId: string
+  email: string
+  role: 'viewer' | 'commenter' | 'editor'
+}
+
+export interface CollaboratorCommentCard {
+  id: string
+  projectId: string
+  authorEmail: string
+  content: string
+}
+
+export interface RevisionSnapshotCard {
+  id: string
+  projectId: string
+  label: string
+  payload: Record<string, unknown>
+}

@@ -4,6 +4,10 @@ import type {
   AudienceProfileCard,
   BudgetSummaryCard,
   BusinessPlanCard,
+  CheckoutSessionCard,
+  CollaboratorCard,
+  CollaboratorCommentCard,
+  ExportPackageCard,
   GenerationJobCard,
   MaterialItemCard,
   NarrativeScriptCard,
@@ -11,6 +15,7 @@ import type {
   PuzzleAnalyticsCard,
   PuzzleCard,
   PuzzleFlowGraph,
+  RevisionSnapshotCard,
   RoomLayoutCard,
   TtsPreviewCard,
 } from '../types'
@@ -179,6 +184,51 @@ const generationJobSchema: z.ZodType<GenerationJobCard> = z.object({
 })
 
 const generationJobListSchema = z.array(generationJobSchema)
+
+const exportPackageSchema: z.ZodType<ExportPackageCard> = z.object({
+  projectId: z.string(),
+  zipUrl: z.string(),
+  manifest: z.object({
+    generatedAt: z.string(),
+    files: z.array(
+      z.object({
+        assetName: z.string(),
+        outputUrl: z.string().nullable(),
+        status: z.string(),
+      }),
+    ),
+  }),
+})
+
+const checkoutSchema: z.ZodType<CheckoutSessionCard> = z.object({
+  projectId: z.string(),
+  checkoutUrl: z.string(),
+  sessionId: z.string(),
+})
+
+const collaboratorSchema: z.ZodType<CollaboratorCard> = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  email: z.string(),
+  role: z.enum(['viewer', 'commenter', 'editor']),
+})
+const collaboratorListSchema = z.array(collaboratorSchema)
+
+const collaboratorCommentSchema: z.ZodType<CollaboratorCommentCard> = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  authorEmail: z.string(),
+  content: z.string(),
+})
+const collaboratorCommentListSchema = z.array(collaboratorCommentSchema)
+
+const revisionSchema: z.ZodType<RevisionSnapshotCard> = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  label: z.string(),
+  payload: z.record(z.unknown()),
+})
+const revisionListSchema = z.array(revisionSchema)
 
 export interface CreateProjectInput {
   name: string
@@ -730,4 +780,175 @@ export const listGenerationJobs = async (
 
 export const buildGenerationStreamUrl = (apiUrl: string, projectId: string): string => {
   return `${apiUrl}/generation/${projectId}/stream`
+}
+
+export const createCheckoutSession = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<CheckoutSessionCard> => {
+  const response = await fetch(`${apiUrl}/payments/checkout`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ projectId }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to create checkout session: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: unknown }
+  return checkoutSchema.parse(payload.data)
+}
+
+export const packageProjectExport = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<ExportPackageCard> => {
+  const response = await fetch(`${apiUrl}/export/package`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ projectId }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to package export: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: unknown }
+  return exportPackageSchema.parse(payload.data)
+}
+
+export const inviteCollaborator = async (
+  apiUrl: string,
+  token: string,
+  input: { projectId: string; email: string; role: CollaboratorCard['role'] },
+): Promise<CollaboratorCard> => {
+  const response = await fetch(`${apiUrl}/collaborators/invite`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to invite collaborator: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { collaborator: unknown } }
+  return collaboratorSchema.parse(payload.data.collaborator)
+}
+
+export const listCollaborators = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<{ collaborators: CollaboratorCard[]; comments: CollaboratorCommentCard[] }> => {
+  const response = await fetch(`${apiUrl}/collaborators/${projectId}`, {
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to list collaborators: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as {
+    data: { collaborators: unknown; comments: unknown }
+  }
+  return {
+    collaborators: collaboratorListSchema.parse(payload.data.collaborators),
+    comments: collaboratorCommentListSchema.parse(payload.data.comments),
+  }
+}
+
+export const addCollaboratorComment = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+  content: string,
+): Promise<CollaboratorCommentCard> => {
+  const response = await fetch(`${apiUrl}/collaborators/comment`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ projectId, content }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to add collaborator comment: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { comment: unknown } }
+  return collaboratorCommentSchema.parse(payload.data.comment)
+}
+
+export const createRevisionSnapshot = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+  label: string,
+  payload: Record<string, unknown>,
+): Promise<RevisionSnapshotCard> => {
+  const response = await fetch(`${apiUrl}/revisions/snapshot`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ projectId, label, payload }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to create revision snapshot: ${response.status}`)
+  }
+
+  const parsed = (await response.json()) as { data: { snapshot: unknown } }
+  return revisionSchema.parse(parsed.data.snapshot)
+}
+
+export const listRevisionSnapshots = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<RevisionSnapshotCard[]> => {
+  const response = await fetch(`${apiUrl}/revisions/${projectId}`, {
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to list revision snapshots: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { snapshots: unknown } }
+  return revisionListSchema.parse(payload.data.snapshots)
+}
+
+export const restoreRevisionSnapshot = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+  revisionId: string,
+): Promise<RevisionSnapshotCard> => {
+  const response = await fetch(`${apiUrl}/revisions/${projectId}/restore/${revisionId}`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to restore revision snapshot: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { snapshot: unknown } }
+  return revisionSchema.parse(payload.data.snapshot)
 }
