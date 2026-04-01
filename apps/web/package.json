@@ -2,14 +2,19 @@
   "name": "@escaperoomninja/web",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
     "dev": "node -e \"console.log('web dev placeholder')\"",
-    "build": "node -e \"console.log('web build placeholder')\"",
+    "build": "tsc -p tsconfig.json",
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node -e \"console.log('web test placeholder')\""
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
   }
 }
