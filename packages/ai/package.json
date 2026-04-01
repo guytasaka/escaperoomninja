@@ -1,0 +1,14 @@
+{
+  "name": "@escaperoomninja/ai",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "node -e \"console.log('ai build placeholder')\"",
+    "lint": "biome check .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node -e \"console.log('ai test placeholder')\""
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@escaperoomninja/db",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "migrate": "node -e \"console.log('db migrate placeholder')\"",
+    "seed": "node -e \"console.log('db seed placeholder')\"",
+    "build": "node -e \"console.log('db build placeholder')\"",
+    "lint": "biome check .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node -e \"console.log('db test placeholder')\""
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,37 @@
+# Escape Room Ninja
+
+Monorepo for Escape Room Forge, built with Turborepo and pnpm.
+
+## Quick Start
+
+1. Install dependencies:
+
+   ```bash
+   pnpm install
+   ```
+
+2. Start local infrastructure:
+
+   ```bash
+   docker compose up -d
+   ```
+
+3. Copy environment variables:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Run development:
+
+   ```bash
+   pnpm dev
+   ```
+
+## Workspace Layout
+
+- `apps/web` - Next.js frontend placeholder
+- `apps/api` - Hono API placeholder
+- `packages/db` - Drizzle schema and migration package
+- `packages/shared` - shared types/constants/utils
+- `packages/ai` - AI provider abstraction package
