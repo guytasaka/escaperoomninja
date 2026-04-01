@@ -2,6 +2,9 @@ import { z } from 'zod'
 
 import type {
   AudienceProfileCard,
+  BudgetSummaryCard,
+  BusinessPlanCard,
+  MaterialItemCard,
   NarrativeScriptCard,
   ProjectCard,
   PuzzleAnalyticsCard,
@@ -125,6 +128,41 @@ const roomLayoutSchema: z.ZodType<RoomLayoutCard> = z.object({
     sound: z.boolean(),
     emergency: z.boolean(),
   }),
+})
+
+const materialItemSchema: z.ZodType<MaterialItemCard> = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  category: z.enum(['props', 'electronics', 'decor', 'tools', 'misc']),
+  name: z.string(),
+  quantity: z.number(),
+  unitCost: z.number(),
+  vendorUrl: z.string().url().nullable(),
+  alternatives: z.array(z.string()),
+  threeDPrintable: z.boolean(),
+})
+
+const materialListSchema = z.array(materialItemSchema)
+
+const budgetSummarySchema: z.ZodType<BudgetSummaryCard> = z.object({
+  projectId: z.string(),
+  totalsByCategory: z.object({
+    props: z.number(),
+    electronics: z.number(),
+    decor: z.number(),
+    tools: z.number(),
+    misc: z.number(),
+  }),
+  totalCost: z.number(),
+  allocatedBudget: z.number(),
+  remainingBudget: z.number(),
+})
+
+const businessPlanSchema: z.ZodType<BusinessPlanCard> = z.object({
+  projectId: z.string(),
+  pricingStrategy: z.string(),
+  financialProjection: z.string(),
+  marketingPlan: z.string(),
 })
 
 export interface CreateProjectInput {
@@ -501,4 +539,137 @@ export const exportLayoutSvg = async (
 
   const payload = (await response.json()) as { data: { svg: string } }
   return payload.data.svg
+}
+
+export const generateMaterials = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<MaterialItemCard[]> => {
+  const response = await fetch(`${apiUrl}/materials/generate`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ projectId }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate materials: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { items: unknown } }
+  return materialListSchema.parse(payload.data.items)
+}
+
+export const enrichMaterials = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<MaterialItemCard[]> => {
+  const response = await fetch(`${apiUrl}/materials/enrich`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ projectId }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to enrich materials: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { items: unknown } }
+  return materialListSchema.parse(payload.data.items)
+}
+
+export const listMaterials = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<MaterialItemCard[]> => {
+  const response = await fetch(`${apiUrl}/materials/${projectId}`, {
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to list materials: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { items: unknown } }
+  return materialListSchema.parse(payload.data.items)
+}
+
+export const updateMaterial = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+  itemId: string,
+  input: Partial<
+    Pick<
+      MaterialItemCard,
+      'quantity' | 'unitCost' | 'vendorUrl' | 'alternatives' | 'threeDPrintable'
+    >
+  >,
+): Promise<MaterialItemCard> => {
+  const response = await fetch(`${apiUrl}/materials/${itemId}?projectId=${projectId}`, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to update material: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { item: unknown } }
+  return materialItemSchema.parse(payload.data.item)
+}
+
+export const getBudgetSummary = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+  allocatedBudget = 1200,
+): Promise<BudgetSummaryCard> => {
+  const response = await fetch(
+    `${apiUrl}/materials/${projectId}/budget?allocatedBudget=${allocatedBudget}`,
+    {
+      headers: { authorization: `Bearer ${token}` },
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(`Failed to load budget summary: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { summary: unknown } }
+  return budgetSummarySchema.parse(payload.data.summary)
+}
+
+export const generateBusinessPlan = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<BusinessPlanCard> => {
+  const response = await fetch(`${apiUrl}/business/generate`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ projectId }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate business plan: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { plan: unknown } }
+  return businessPlanSchema.parse(payload.data.plan)
 }

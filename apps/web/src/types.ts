@@ -109,3 +109,30 @@ export interface RoomLayoutCard {
     emergency: boolean
   }
 }
+
+export interface MaterialItemCard {
+  id: string
+  projectId: string
+  category: 'props' | 'electronics' | 'decor' | 'tools' | 'misc'
+  name: string
+  quantity: number
+  unitCost: number
+  vendorUrl: string | null
+  alternatives: string[]
+  threeDPrintable: boolean
+}
+
+export interface BudgetSummaryCard {
+  projectId: string
+  totalsByCategory: Record<MaterialItemCard['category'], number>
+  totalCost: number
+  allocatedBudget: number
+  remainingBudget: number
+}
+
+export interface BusinessPlanCard {
+  projectId: string
+  pricingStrategy: string
+  financialProjection: string
+  marketingPlan: string
+}
