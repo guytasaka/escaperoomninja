@@ -35,3 +35,18 @@ Monorepo for Escape Room Forge, built with Turborepo and pnpm.
 - `packages/db` - Drizzle schema and migration package
 - `packages/shared` - shared types/constants/utils
 - `packages/ai` - AI provider abstraction package
+
+## Common commands
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+## Contributor docs
+
+- Contribution guide: `CONTRIBUTING.md`
+- Agent operating guide: `AGENTS.md`
+- Pull request template: `.github/pull_request_template.md`
