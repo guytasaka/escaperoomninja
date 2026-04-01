@@ -7,6 +7,8 @@ import { AuthService } from './auth/service'
 import { InMemoryAuthUserStore } from './auth/store'
 import { BusinessService } from './business/service'
 import { ConceptService } from './concept/service'
+import { GenerationQueueRuntime } from './generation/queue'
+import { GenerationService } from './generation/service'
 import { LayoutService } from './layout/service'
 import { InMemoryLayoutStore } from './layout/store'
 import { MaterialsService } from './materials/service'
@@ -21,6 +23,7 @@ import { createAudienceRoutes } from './routes/audience'
 import { createAuthRoutes } from './routes/auth'
 import { createBusinessRoutes } from './routes/business'
 import { createConceptRoutes } from './routes/concept'
+import { createGenerationRoutes } from './routes/generation'
 import { createLayoutRoutes } from './routes/layouts'
 import { createMaterialsRoutes } from './routes/materials'
 import { createNarrativeRoutes } from './routes/narratives'
@@ -65,6 +68,8 @@ export const createApp = (): Hono => {
     taskRouter.getTextModel(),
   )
   const layoutService = new LayoutService(new InMemoryLayoutStore(), projectService)
+  const generationQueue = new GenerationQueueRuntime()
+  const generationService = new GenerationService(projectService, generationQueue)
   const materialsService = new MaterialsService(
     new InMemoryMaterialStore(),
     projectService,
@@ -88,6 +93,7 @@ export const createApp = (): Hono => {
   app.route('/concept', createConceptRoutes(authService, projectService, conceptService))
   app.route('/audience', createAudienceRoutes(authService, audienceService))
   app.route('/puzzles', createPuzzleRoutes(authService, puzzleService))
+  app.route('/generation', createGenerationRoutes(authService, generationService))
   app.route('/materials', createMaterialsRoutes(authService, materialsService))
   app.route('/business', createBusinessRoutes(authService, businessService))
   app.route('/narratives', createNarrativeRoutes(authService, narrativeService))

@@ -4,6 +4,7 @@ import type {
   AudienceProfileCard,
   BudgetSummaryCard,
   BusinessPlanCard,
+  GenerationJobCard,
   MaterialItemCard,
   NarrativeScriptCard,
   ProjectCard,
@@ -164,6 +165,20 @@ const businessPlanSchema: z.ZodType<BusinessPlanCard> = z.object({
   financialProjection: z.string(),
   marketingPlan: z.string(),
 })
+
+const generationJobSchema: z.ZodType<GenerationJobCard> = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  assetType: z.enum(['text', 'image', 'audio', 'music', 'diagram', 'pdf', 'stl', 'video']),
+  assetName: z.string(),
+  status: z.enum(['queued', 'processing', 'complete', 'failed']),
+  attempt: z.number(),
+  maxAttempts: z.number(),
+  outputUrl: z.string().nullable(),
+  error: z.string().nullable(),
+})
+
+const generationJobListSchema = z.array(generationJobSchema)
 
 export interface CreateProjectInput {
   name: string
@@ -672,4 +687,47 @@ export const generateBusinessPlan = async (
 
   const payload = (await response.json()) as { data: { plan: unknown } }
   return businessPlanSchema.parse(payload.data.plan)
+}
+
+export const startGeneration = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<{ runId: string }> => {
+  const response = await fetch(`${apiUrl}/generation/start`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ projectId }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to start generation: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { runId: string } }
+  return { runId: payload.data.runId }
+}
+
+export const listGenerationJobs = async (
+  apiUrl: string,
+  token: string,
+  projectId: string,
+): Promise<GenerationJobCard[]> => {
+  const response = await fetch(`${apiUrl}/generation/${projectId}`, {
+    headers: { authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to list generation jobs: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as { data: { jobs: unknown } }
+  return generationJobListSchema.parse(payload.data.jobs)
+}
+
+export const buildGenerationStreamUrl = (apiUrl: string, projectId: string): string => {
+  return `${apiUrl}/generation/${projectId}/stream`
 }

@@ -7,16 +7,19 @@ export {
   generateMoodBoard,
   generateNarratives,
   generatePuzzles,
+  buildGenerationStreamUrl,
   getBudgetSummary,
   getLayout,
   getPuzzleAnalytics,
   getPuzzleFlow,
   listMaterials,
+  listGenerationJobs,
   listNarratives,
   listProjects,
   listPuzzles,
   previewNarrativeTts,
   saveLayout,
+  startGeneration,
   enrichMaterials,
   updateMaterial,
   updateNarrativeScript,
@@ -28,6 +31,7 @@ export { renderBudgetPage } from './pages/budget-page'
 export { renderBusinessPage } from './pages/business-page'
 export { renderConceptPage } from './pages/concept-page'
 export { renderDashboardShell } from './pages/dashboard-page'
+export { renderGenerationDashboard } from './pages/generation-page'
 export { validateCreateProjectInput } from './pages/create-project-flow'
 export { renderLayoutPage } from './pages/layout-page'
 export { renderLoginPage } from './pages/login-page'
@@ -38,6 +42,7 @@ export type {
   AudienceProfileCard,
   BudgetSummaryCard,
   BusinessPlanCard,
+  GenerationJobCard,
   MaterialItemCard,
   NarrativeScriptCard,
   ProjectCard,

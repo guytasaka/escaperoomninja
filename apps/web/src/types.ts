@@ -136,3 +136,25 @@ export interface BusinessPlanCard {
   financialProjection: string
   marketingPlan: string
 }
+
+export type GenerationAssetType =
+  | 'text'
+  | 'image'
+  | 'audio'
+  | 'music'
+  | 'diagram'
+  | 'pdf'
+  | 'stl'
+  | 'video'
+
+export interface GenerationJobCard {
+  id: string
+  projectId: string
+  assetType: GenerationAssetType
+  assetName: string
+  status: 'queued' | 'processing' | 'complete' | 'failed'
+  attempt: number
+  maxAttempts: number
+  outputUrl: string | null
+  error: string | null
+}
