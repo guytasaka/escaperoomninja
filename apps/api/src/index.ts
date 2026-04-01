@@ -1,10 +1,11 @@
 import { TaskRouter } from '@escaperoomninja/ai'
+import { createDbClient } from '@escaperoomninja/db'
 import { Hono } from 'hono'
 
 import { AudienceService } from './audience/service'
 import { InMemoryAudienceStore } from './audience/store'
 import { AuthService } from './auth/service'
-import { InMemoryAuthUserStore } from './auth/store'
+import { DrizzleAuthUserStore, InMemoryAuthUserStore } from './auth/store'
 import { BusinessService } from './business/service'
 import { CollaboratorService } from './collaborators/service'
 import { InMemoryCollaboratorStore } from './collaborators/store'
@@ -20,7 +21,7 @@ import { NarrativeService } from './narratives/service'
 import { InMemoryNarrativeStore } from './narratives/store'
 import { PaymentService } from './payment/service'
 import { ProjectService } from './projects/service'
-import { InMemoryProjectStore } from './projects/store'
+import { DrizzleProjectStore, InMemoryProjectStore } from './projects/store'
 import { PuzzleService } from './puzzles/service'
 import { InMemoryPuzzleStore } from './puzzles/store'
 import { RevisionService } from './revisions/service'
@@ -46,8 +47,11 @@ const defaultModel = process.env.OPENROUTER_MODEL ?? 'openai/gpt-4o-mini'
 
 export const createApp = (): Hono => {
   const app = new Hono()
-  const authService = new AuthService(new InMemoryAuthUserStore(), defaultSecret)
-  const projectService = new ProjectService(new InMemoryProjectStore())
+  const db = process.env.DATABASE_URL ? createDbClient(process.env.DATABASE_URL) : null
+  const authStore = db ? new DrizzleAuthUserStore(db) : new InMemoryAuthUserStore()
+  const projectStore = db ? new DrizzleProjectStore(db) : new InMemoryProjectStore()
+  const authService = new AuthService(authStore, defaultSecret)
+  const projectService = new ProjectService(projectStore)
   const taskRouter = new TaskRouter({
     llmModel: defaultModel,
     openRouterApiKey: process.env.OPENROUTER_API_KEY,

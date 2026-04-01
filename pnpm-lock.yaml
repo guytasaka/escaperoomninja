@@ -26,12 +26,18 @@ importers:
       '@escaperoomninja/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@escaperoomninja/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
       bullmq:
         specifier: ^5.12.9
         version: 5.71.1
+      drizzle-orm:
+        specifier: ^0.36.4
+        version: 0.36.4(postgres@3.4.8)
       hono:
         specifier: ^4.6.5
         version: 4.12.9
@@ -85,7 +91,10 @@ importers:
     dependencies:
       drizzle-orm:
         specifier: ^0.36.4
-        version: 0.36.4
+        version: 0.36.4(postgres@3.4.8)
+      postgres:
+        specifier: ^3.4.5
+        version: 3.4.8
     devDependencies:
       drizzle-kit:
         specifier: ^0.27.2
@@ -1058,6 +1067,10 @@ packages:
     resolution: {integrity: sha512-OW/rX8O/jXnm82Ey1k44pObPtdblfiuWnrd8X7GJ7emImCOstunGbXUpp7HdBrFQX6rJzn3sPT397Wp5aCwCHg==}
     engines: {node: ^10 || ^12 || >=14}
 
+  postgres@3.4.8:
+    resolution: {integrity: sha512-d+JFcLM17njZaOLkv6SCev7uoLaBtfK86vMUXhW1Z4glPWh4jozno9APvW/XKFJ3CCxVoC7OL38BqRydtu5nGg==}
+    engines: {node: '>=12'}
+
   redis-errors@1.2.0:
     resolution: {integrity: sha512-1qny3OExCf0UvUV/5wpYKf2YwPcOqXzkwKKSmKHiE6ZMQs5heeE/c8eXK+PNllPvmjgAbfnsbpkGZWy8cBpn9w==}
     engines: {node: '>=4'}
@@ -1680,7 +1693,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.36.4: {}
+  drizzle-orm@0.36.4(postgres@3.4.8):
+    optionalDependencies:
+      postgres: 3.4.8
 
   es-module-lexer@1.7.0: {}
 
@@ -1849,6 +1864,8 @@ snapshots:
       nanoid: 3.3.11
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  postgres@3.4.8: {}
 
   redis-errors@1.2.0: {}
 
